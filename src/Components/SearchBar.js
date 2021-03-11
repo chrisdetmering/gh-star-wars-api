@@ -1,26 +1,20 @@
 import React, { useState } from "react";
-import axios from "axios";
 
-const SearchBar = ({ setCharacterData }) => {
+
+const SearchBar = ({ search }) => {
   const [query, setQuery] = useState("");
 
-  const getSearchQuery = (query) => {
-    axios
-      .get(`https://swapi.dev/api/people/?search=${query}`)
-      .then((response) => setCharacterData(response.data.results))
-      .catch((err) => console.error(err));
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    getSearchQuery(query);
+    search(`https://swapi.dev/api/people/?search=${query}`);
   };
 
   return (
-    <form class="input-group m-4" onSubmit={handleSubmit}>
+    <form className="input-group m-4" onSubmit={handleSubmit}>
       <input
         type="search"
-        class="form-control rounded"
+        className="form-control rounded"
         placeholder="Search Characters"
         required
         aria-label="Search"
@@ -28,10 +22,8 @@ const SearchBar = ({ setCharacterData }) => {
         onChange={(e) => setQuery(e.target.value)}
       />
       <button
-        type="button"
-        class="btn btn-outline-primary ml-2"
-        onClick={handleSubmit}
-      >
+        type="submit"
+        className="btn btn-outline-primary ml-2">
         Search
       </button>
     </form>

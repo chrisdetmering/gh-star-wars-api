@@ -9,81 +9,60 @@ import { BeatLoader } from "react-spinners";
 import SearchBar from "./Components/SearchBar";
 
 const App = () => {
-  const [characterData, setCharacterData] = useState([]);
-  const [planetData, setPlanetData] = useState([]);
-  const [speciesData, setSpeciesData] = useState([]);
-  const [page, setPage] = useState(1);
+  const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getSwapiPage(page);
-  }, [page]);
+  useEffect(() => { 
+    getCharacters("https://swapi.dev/api/people/"); 
+  }, [])
 
-  useEffect(() => {
-    getPlanetData();
-    getSpeciesData();
-  }, []);
+  const getCharacters = async (url) => { 
+      setLoading(true); 
+      const response = await axios.get(url); 
+      let characters = response.data.results; 
 
-  const getSwapiPage = (page) => {
-    axios
-      .get(`https://swapi.dev/api/people/?page=${page}`)
-      .then((response) => setCharacterData(response.data.results))
-      .catch((err) => console.error(err));
-  };
+      characters = await Promise.all(characters.map(async character => { 
+        character.species =  await getSpecies(character.species); 
+        character.homeWorld = await getHomeWorld(character.homeworld); 
+        return character; 
+      }))
 
-  const getPlanetData = () => {
-    const processedResponses = [];
+      setCharacters(characters); 
+      setLoading(false); 
+  }
 
-    for (let i = 1; i < 7; i++) {
-      axios
-        .get(`https://swapi.dev/api/planets/?page=${i}`)
-        .then((response) => {
-          response.data.results.map((response) => {
-            processedResponses.push(response);
-          });
-          setPlanetData(processedResponses);
-          setLoading(false);
-        })
-        .catch((err) => console.error(err));
+  const getHomeWorld = async (url) => { 
+    const response = await axios.get(url); 
+    return response.data.name; 
+  }
+
+
+  const getSpecies = async (url) => { 
+    if (url.length === 0) { 
+      return "Human"; 
     }
-  };
+    const response = await axios.get(url[0]); 
+    return response.data.name; 
+  }
 
-  const getSpeciesData = () => {
-    const processedResponses = [];
+  const handlePageChange = (pageNumber) => { 
+      getCharacters(`http://swapi.dev/api/people/?page=${pageNumber}`)
+  } 
 
-    for (let i = 1; i < 5; i++) {
-      axios
-        .get(`https://swapi.dev/api/species/?page=${i}`)
-        .then((response) => {
-          response.data.results.map((response) => {
-            processedResponses.push(response);
-          });
-          setSpeciesData(processedResponses);
-        })
-        .catch((err) => console.error(err));
-    }
-  };
 
   return (
-    <div class="p-5 text-center bg-light">
-      <h1 class="mb-3">Star Wars</h1>
+    <div className="p-5 text-center bg-light">
+      <h1 className="mb-3">Star Wars</h1>
+      <SearchBar search={getCharacters} />
 
-      <SearchBar setCharacterData={setCharacterData} />
-
-      {loading === false ? (
-        <CharacterTable
-          characterData={characterData}
-          planetData={planetData}
-          speciesData={speciesData}
-        />
-      ) : (
-        <BeatLoader />
-      )}
+      {!loading ? <CharacterTable
+          characters={characters}/>
+       : <BeatLoader />}
 
       <ReactPaginate
         pageCount="9"
         onPageChange={({ selected }) => {
-          setPage(selected + 1);
+          handlePageChange(selected + 1)
         }}
         containerClassName={"paginationBttns"}
         previousLinkClassName={"previousBttn"}
